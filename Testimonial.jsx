@@ -1,213 +1,241 @@
 import React, { useEffect, useRef, useState } from "react";
 import { FaStar } from "react-icons/fa";
-function Testimonials() {
+import { testimonialsDataOfPeople } from "./TestiData";
+import "./testimony.css";
+
+const AUTOPLAY_MS = 4000;
+
+const Testimonials = () => {
   const containerRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const autoSlideRef = useRef(null);
-  const isDraggingRef = useRef(false);
-  const startXRef = useRef(0);
-  const scrollLeftRef = useRef(0);
+  const currentIndexRef = useRef(0);
+  const autoSlideId = useRef(null);
 
-  const testimonials = [
-    {
-      name: "Yogita Kumkar",
-      feedback: "A good products n a good quality. Must buy n try for best look.👍",
-      rating: 5
-    },
-    {
-      name: "Afreen Ansari",
-      feedback: "I wore Ornaora’s AD earrings to a wedding and stole the show people couldn’t stop asking where I got them from. Lightweight, sparkly, and super classy!",
-      rating: 5
-    },
-    {
-      name: "Rekha Sontakke",
-      feedback: "I was honestly a bit skeptical about ordering from Ornaora since they’re a new brand, but I came across some really unique and beautiful jewelry pieces that completely won me over. I couldn’t stop myself from placing an order and I’m so glad I did! The jhumkas I got are absolutely stunning great quality, anti tarnish, and they look so classy. Totally worth it! Thanks",
-      rating: 5
-    },
-    {
-      name: "Aayesha Shaikh",
-      feedback: "Found Ornaora recently and I’ve already placed my third order. Their service is so smooth and every piece feels like it’s made with love. The packaging is also super thoughtful!",
-      rating: 4
-    },
-    {
-      name: "Babita Vishwakarma",
-      feedback: "Good price and best quality products and given fantastic service to the customer",
-      rating: 5
-    },
-    {
-      name: "Dr.Archana Jadhav",
-      feedback: "Honestly, Ornaora delivers that high-end look without burning a hole in your pocket. The craftsmanship, finishing, and detail are impressive at this price point! and makes me feel so graceful every time I wear it. Thank you Ornaora for such a stunning piece!❤️",
-      rating: 5
-    },
-    {
-      name: "Nazneen Bi",
-      feedback: "Ornaora isn’t just selling jewelry they’re delivering joy, elegance, and confidence in every package. The experience feels premium from order to delivery.",
-      rating: 4
-    },
-    {
-      name: "Prachi Betkar",
-      feedback: "I am so happy with this kundan chandbali it's elegant, detailed, and adds the perfect touch to my decor. Looks even better in person, such a charming little piece It looks premium and instantly brightens up my self!! Great value for the price.",
-      rating: 4
-    },
+  useEffect(() => {
+    currentIndexRef.current = currentIndex;
+  }, [currentIndex]);
 
-  ];
+  const getCards = () => {
+    const container = containerRef.current;
+    if (!container) return [];
+    return Array.from(container.querySelectorAll(".testimonials-card"));
+  };
 
+  const scrollToCard = (index) => {
+    const cards = getCards();
+    if (!cards.length || !containerRef.current) return;
+    const total = cards.length;
+    const newIndex = ((index % total) + total) % total;
+    const target = cards[newIndex];
+    containerRef.current.scrollTo({
+      left:
+        target.offsetLeft -
+        (containerRef.current.offsetWidth - target.offsetWidth) / 2,
+      behavior: "smooth",
+    });
+    setCurrentIndex(newIndex);
+  };
+
+  const updateActiveCard = () => {
+    const container = containerRef.current;
+    if (!container) return;
+    const cards = getCards();
+    if (!cards.length) return;
+
+    const containerCenter = container.scrollLeft + container.offsetWidth / 2;
+    let closestIdx = 0;
+    let minDistance = Infinity;
+
+    cards.forEach((card, idx) => {
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const dist = Math.abs(containerCenter - cardCenter);
+      if (dist < minDistance) {
+        minDistance = dist;
+        closestIdx = idx;
+      }
+    });
+
+    setCurrentIndex(closestIdx);
+  };
+
+  useEffect(() => {
+    const startAuto = () => {
+      stopAuto();
+      autoSlideId.current = setInterval(() => {
+        scrollToCard(currentIndexRef.current + 1);
+      }, AUTOPLAY_MS);
+    };
+
+    const stopAuto = () => {
+      if (autoSlideId.current !== null) {
+        clearInterval(autoSlideId.current);
+        autoSlideId.current = null;
+      }
+    };
+
+    startAuto();
+
+    const handleVisibility = () => {
+      if (document.hidden) stopAuto();
+      else startAuto();
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      stopAuto();
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, []);
 
   useEffect(() => {
     const container = containerRef.current;
-    const cards = container.querySelectorAll(".testimonials-card");
-    const dots = document.querySelectorAll(".dot-10");
+    if (!container) return;
 
-    function updatePopupCard() {
-      const containerCenter = container.scrollLeft + container.offsetWidth / 2;
-      let closestCard = null;
-      let closestDistance = Infinity;
-      let closestIdx = 0;
+    let isDragging = false;
+    let startX = 0;
+    let scrollLeft = 0;
 
-      cards.forEach((card, index) => {
-        const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-        const distance = Math.abs(containerCenter - cardCenter);
-        if (distance < closestDistance) {
-          closestDistance = distance;
-          closestCard = card;
-          closestIdx = index;
-        }
-      });
-
-      cards.forEach(card => card.classList.remove("popup-active"));
-      if (closestCard) closestCard.classList.add("popup-active");
-
-      setCurrentIndex(closestIdx);
-
-      dots.forEach((dot, i) => {
-        dot.style.backgroundColor = i === closestIdx ? "#6933be" : "white";
-      });
-    }
-
-    const scrollToCard = (index) => {
-      const total = cards.length;
-      const newIndex = ((index % total) + total) % total;
-      const targetCard = cards[newIndex];
-      if (!targetCard) return;
-
-      container.scrollTo({
-        left: targetCard.offsetLeft - (container.offsetWidth - targetCard.offsetWidth) / 2,
-        behavior: "smooth",
-      });
-
-      setCurrentIndex(newIndex);
-
-      dots.forEach((dot, i) => {
-        dot.style.backgroundColor = i === newIndex ? "#6933be" : "white";
-      });
-    };
-
-    autoSlideRef.current = setInterval(() => {
-      scrollToCard(currentIndex + 1);
-    }, 4000);
-
-    container.addEventListener("scroll", () => {
-      requestAnimationFrame(updatePopupCard);
-    });
-
-    document.querySelectorAll(".dot-10").forEach((dot, index) => {
-      dot.addEventListener("click", () => {
-        scrollToCard(index);
-      });
-    });
-
-    // Drag functionality
-    const handleMouseDown = (e) => {
-      isDraggingRef.current = true;
-      startXRef.current = e.pageX - container.offsetLeft;
-      scrollLeftRef.current = container.scrollLeft;
+    const onMouseDown = (e) => {
+      isDragging = true;
+      startX = e.pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+      if (autoSlideId.current !== null) {
+        clearInterval(autoSlideId.current);
+        autoSlideId.current = null;
+      }
       container.classList.add("dragging");
-      clearInterval(autoSlideRef.current);
     };
 
-    const handleMouseLeave = () => {
-      if (isDraggingRef.current) {
-        isDraggingRef.current = false;
-        container.classList.remove("dragging");
-        autoSlideRef.current = setInterval(() => {
-          scrollToCard(currentIndex + 1);
-        }, 4000);
-      }
-    };
-
-    const handleMouseUp = () => {
-      if (isDraggingRef.current) {
-        isDraggingRef.current = false;
-        container.classList.remove("dragging");
-        autoSlideRef.current = setInterval(() => {
-          scrollToCard(currentIndex + 1);
-        }, 4000);
-      }
-    };
-
-    const handleMouseMove = (e) => {
-      if (!isDraggingRef.current) return;
+    const onMouseMove = (e) => {
+      if (!isDragging) return;
       e.preventDefault();
       const x = e.pageX - container.offsetLeft;
-      const walk = (x - startXRef.current) * 2;
-      container.scrollLeft = scrollLeftRef.current - walk;
+      const walk = (x - startX) * 1.5;
+      container.scrollLeft = scrollLeft - walk;
     };
 
-    container.addEventListener("mousedown", handleMouseDown);
-    container.addEventListener("mouseleave", handleMouseLeave);
-    container.addEventListener("mouseup", handleMouseUp);
-    container.addEventListener("mousemove", handleMouseMove);
+    const endDrag = () => {
+      if (!isDragging) return;
+      isDragging = false;
+      container.classList.remove("dragging");
+      autoSlideId.current = setInterval(() => {
+        scrollToCard(currentIndexRef.current + 1);
+      }, AUTOPLAY_MS);
+      updateActiveCard();
+      setTimeout(updateActiveCard, 120);
+    };
 
-    updatePopupCard(); // initial popup
+    const onTouchStart = (e) => {
+      isDragging = true;
+      startX = e.touches[0].pageX - container.offsetLeft;
+      scrollLeft = container.scrollLeft;
+      if (autoSlideId.current !== null) {
+        clearInterval(autoSlideId.current);
+        autoSlideId.current = null;
+      }
+    };
+
+    const onTouchMove = (e) => {
+      if (!isDragging) return;
+      const x = e.touches[0].pageX - container.offsetLeft;
+      const walk = (x - startX) * 1.5;
+      container.scrollLeft = scrollLeft - walk;
+    };
+
+    container.addEventListener("mousedown", onMouseDown);
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", endDrag);
+    container.addEventListener("mouseleave", endDrag);
+
+    container.addEventListener("touchstart", onTouchStart, { passive: true });
+    container.addEventListener("touchmove", onTouchMove, { passive: true });
+    container.addEventListener("touchend", endDrag);
+
+    const onScroll = () => {
+      requestAnimationFrame(updateActiveCard);
+    };
+    container.addEventListener("scroll", onScroll, { passive: true });
+
+    setTimeout(updateActiveCard, 50);
 
     return () => {
-      clearInterval(autoSlideRef.current);
-      container.removeEventListener("mousedown", handleMouseDown);
-      container.removeEventListener("mouseleave", handleMouseLeave);
-      container.removeEventListener("mouseup", handleMouseUp);
-      container.removeEventListener("mousemove", handleMouseMove);
+      container.removeEventListener("mousedown", onMouseDown);
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", endDrag);
+      container.removeEventListener("mouseleave", endDrag);
+
+      container.removeEventListener("touchstart", onTouchStart);
+      container.removeEventListener("touchmove", onTouchMove);
+      container.removeEventListener("touchend", endDrag);
+
+      container.removeEventListener("scroll", onScroll);
     };
-  }, [currentIndex]);
+  }, []);
 
   return (
-    <div className="all-in-one-cont-div">
-      <div className="title-what-say">
-        <h1>What Our Customers Say About Us</h1>
-      </div>
-
-      <div className="want-to-make-fl" id="testimonialContainer" ref={containerRef}>
-        {testimonials.map((item, index) => (
-          <div className="testimonials-card dont-1-for-pad" key={index}>
-            <div className="rat-5-or-4">
-              {[...Array(5)].map((_, i) => (
-                <FaStar
-                  key={i}
-                  style={{
-                    color: i < item.rating ? 'rgb(255, 200, 0)' : 'rgb(201, 201, 201)',
-                    fontSize: '16px',
-                  }}
-                />
-              ))}
-
-            </div>
-            <div className="cont-of-user">
-              <p>{item.feedback}</p>
-            </div>
-            <div className="test-user_name">
-              <p>{item.name}</p>
-            </div>
+    <section className="testimonials-section w-full mt-10">
+      <div className="w-full px-3 md:px-10 xl:px-20">
+        <div className="max-w-[1800px] w-full block overflow-visible select-none">
+          <div className="text-center mb-6">
+            <h2 className="text-xl md:text-2xl font-bold col-ch-to-pr">
+              What Our Client Say About Us
+            </h2>
+            <div className="w-20 h-[3px] mx-auto mt-2 rounded-full" />
           </div>
-        ))}
-      </div>
 
-      <div className="pagi-10-for-dot" id="paginationDots">
-        {testimonials.map((_, i) => (
-          <span key={i} className="dot-10"></span>
-        ))}
+          <div
+            ref={containerRef}
+            className="testimonials-container flex gap-6 overflow-x-scroll scroll-smooth no-scrollbar px-2 py-2 w-full"
+          >
+            {testimonialsDataOfPeople.map((item, idx) => (
+              <article
+                key={item.id}
+                className={`testimonials-card bg-[#F0F6FF] shrink-0 rounded-2xl p-6 w-80 lg:w-96 transition-all duration-300 ${
+                  currentIndex === idx ? "scale-105 shadow-sm" : "scale-100 shadow-md"
+                }`}
+                aria-hidden={currentIndex !== idx}
+              >
+                <div className="flex justify-center mb-3">
+                  {[...Array(5)].map((_, i) => (
+                    <FaStar
+                      key={i}
+                      className="mr-1"
+                      style={{
+                        fontSize: 16,
+                        color: i < item.rating ? "#FFA41C" : "#d1d5db",
+                      }}
+                    />
+                  ))}
+                </div>
+
+                <p className="text-center italic text-sm">“{item.feedback}”</p>
+                <p className="text-center font-semibold mt-4">{item.name}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="flex gap-2 mt-4 justify-center">
+            {testimonialsDataOfPeople.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                aria-label={`Go to testimonial ${i + 1}`}
+                onClick={() => scrollToCard(i)}
+                className={`h-2 w-2 rounded-full border transition-transform ${
+                  i === currentIndex ? "scale-110" : ""
+                }`}
+                style={{
+                  borderColor: "#007BFF", // blue border
+                  backgroundColor: i === currentIndex ? "#007BFF" : "transparent", // blue active
+                }}
+              />
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
   );
-
-}
+};
 
 export default Testimonials;
